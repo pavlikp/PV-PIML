@@ -35,9 +35,11 @@ class PVDataset(Dataset):
             self.installation_folder = osp.join(self.country_folder, str(self.metadata["System ID"].iloc[0]))
 
             train_samples, valid_samples, test_samples = self._split_samples_in_folder(self.installation_folder)
+            self.installation_metadata = self.metadata.iloc[0]
         else:
             self.installation_folder = osp.join(self.country_folder, self.installation)
             train_samples, valid_samples, test_samples = self._split_samples_in_folder(self.installation_folder)
+            self.installation_metadata = self.metadata[self.metadata["System ID"] == self.installation].iloc[0]
         
         if self.split == "train":
             self.datapaths = [osp.join(self.installation_folder, sample) for sample in train_samples]
@@ -57,16 +59,17 @@ class PVDataset(Dataset):
         df["date"] = datetime.strptime(date, "%Y%m%d")
         df["datetime"] = pd.to_datetime(df["date"].astype(str) + " " + df["time"])
 
+
         dhi = torch.tensor(df['aswdir_s_i'].values)
         ghi = torch.tensor(df['ghi'].values)
         dni = torch.tensor(df['aswdifd_s_i'].values)
         wind_speed = torch.tensor(df['wind_speed'].values)
-        temp_air = torch.tensor(df['t_2m'].values)
+        temp_air = torch.tensor(df['t_2m'].values) - 273.15 # convert from K to °C
         unix_timestamps = torch.tensor(df["datetime"].apply(lambda x: x.value // 10 ** 9).values)
 
         out = torch.tensor(df['production'].values)
 
-        return (dhi, ghi, dni, wind_speed, temp_air, unix_timestamps), out
+        return (dhi, ghi, dni, wind_speed, temp_air, unix_timestamps), out, self.installation_metadata.to_dict()
 
     def _split_samples_in_folder(self, folder):
         TEST_FRACTION = 5

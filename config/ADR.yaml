@@ -1,0 +1,33 @@
+architecture: "ADRInspired"
+# Parameters for training model
+train_params:
+  device: cuda:0
+  train_batch_size: 4
+  valid_batch_size: 4
+  test_batch_size: 4
+  max_epochs: 9999
+  # Max time used for training (days:hours:mins:secs)
+  max_time: "99:00:00:00"
+  # Validate after every n epochs
+  val_check_interval: 1.0
+  num_workers: 15
+  gpus: 1
+  savefile: "PV-PIML"
+  val_batches: 9999999
+  train_batches: 100
+  early_stopping:
+    strict: false
+    verbose: true
+    monitor: "val_loss"
+    patience: 16
+  lr_scheduler:
+    name: "ExponentialLR"
+    kwargs:
+      gamma : 0.95
+  lr: 1e-04
+  loss: "mse"
+
+dataset:
+  path: 'C:\Users\peter\Repos\ENFIELD-data\processed_unpack\nwp_0h'
+  country: "Slovakia"
+  installation: "top"
