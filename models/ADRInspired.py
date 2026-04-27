@@ -26,26 +26,16 @@ class ADRInspired(pl.LightningModule):
         self.automatic_optimization = False
 
         # Parameters
-        self.albedo = torch.tensor(0.25, requires_grad=True)
+        self.albedo = nn.Parameter(torch.tensor(0.25, requires_grad=True))
 
-        self.u0 = torch.tensor(25.0, requires_grad=True)
-        self.u1 = torch.tensor(7.0, requires_grad=True)
+        self.u0 = nn.Parameter(torch.tensor(25.0, requires_grad=True))
+        self.u1 = nn.Parameter(torch.tensor(7.0, requires_grad=True))
 
-        self.k_a = torch.tensor(1.0, requires_grad=True)
-        self.k_d = torch.tensor(-6.0, requires_grad=True)         
-        self.tc_d = torch.tensor(0.0, requires_grad=True)
-        self.k_rs = torch.tensor(1e-3, requires_grad=True)
-        self.k_rsh = torch.tensor(1e-3, requires_grad=True)
-
-        # Register trainable model parameters
-        self.register_parameter("albedo_param", nn.Parameter(self.albedo))
-        self.register_parameter("u0_param", nn.Parameter(self.u0))
-        self.register_parameter("u1_param", nn.Parameter(self.u1))
-        self.register_parameter("k_a_param", nn.Parameter(self.k_a))
-        self.register_parameter("k_d_param", nn.Parameter(self.k_d))
-        self.register_parameter("tc_d_param", nn.Parameter(self.tc_d))
-        self.register_parameter("k_rs_param", nn.Parameter(self.k_rs))
-        self.register_parameter("k_rsh_param", nn.Parameter(self.k_rsh))
+        self.k_a = nn.Parameter(torch.tensor(1.0, requires_grad=True))
+        self.k_d = nn.Parameter(torch.tensor(-6.0, requires_grad=True))         
+        self.tc_d = nn.Parameter(torch.tensor(0.0, requires_grad=True))
+        self.k_rs = nn.Parameter(torch.tensor(1e-3, requires_grad=True))
+        self.k_rsh = nn.Parameter(torch.tensor(1e-3, requires_grad=True))
 
     def forward(self, x, metadata):
         (dhi, ghi, dni, wind_speed, temp_air, unix_timestamps) = x
@@ -54,14 +44,16 @@ class ADRInspired(pl.LightningModule):
 
         solar_zenith = torch.zeros_like(unix_timestamps)
         solar_azimuth = torch.zeros_like(unix_timestamps)
-        tilt = torch.zeros(batch_size, 1)
-        orient = torch.zeros(batch_size, 1)
+        tilt = torch.zeros(batch_size, 1).to(self.device)
+        orient = torch.zeros(batch_size, 1).to(self.device)
         for i in range(batch_size):
-            loc = location.Location(latitude=metadata["Latitude"][i].item(), longitude=metadata["Longitude"][i].item(), tz="UTC")
-
-            solpos = loc.get_solarposition(pd.to_datetime(unix_timestamps[i], unit="s"))
-            solar_zenith[i] = torch.deg2rad(torch.tensor(solpos.apparent_zenith.values))
-            solar_azimuth[i] = torch.deg2rad(torch.tensor(solpos.azimuth.values))
+            loc = location.Location(latitude=metadata["Latitude"][i].item(),
+                                    longitude=metadata["Longitude"][i].item(),
+                                    altitude=metadata["Elevation"][i].item(),
+                                    tz="UTC")
+            solpos = loc.get_solarposition(pd.to_datetime(unix_timestamps[i].cpu(), unit="s") - pd.Timedelta(minutes=7.5))
+            solar_zenith[i] = torch.deg2rad(torch.tensor(solpos.apparent_zenith.values)).to(self.device)
+            solar_azimuth[i] = torch.deg2rad(torch.tensor(solpos.azimuth.values)).to(self.device)
 
             tilt[i] = torch.deg2rad(torch.tensor(metadata['Array Tilt (degrees)'][i].item()))
             if metadata['Orientation'][i] == 'S':
@@ -121,7 +113,7 @@ class ADRInspired(pl.LightningModule):
         x, y, metadata = batch
 
         y_hat = self(x, metadata)
-        loss = self.criterion(y_hat, y)
+        loss = self.criterion(y_hat / 4000.0, y)
             
         self.manual_backward(loss)
         opt.step()
@@ -133,7 +125,7 @@ class ADRInspired(pl.LightningModule):
         x, y, metadata = batch
 
         y_hat = self(x, metadata)
-        loss = self.criterion(y_hat, y)
+        loss = self.criterion(y_hat / 4000.0, y)
 
         self.log("val_loss", loss.detach())
         return {"prediction": y_hat, "loss": loss.detach()}
@@ -142,7 +134,7 @@ class ADRInspired(pl.LightningModule):
         x, y, metadata = batch
 
         y_hat = self(x, metadata)
-        mse = nn.functional.mse_loss(y_hat, y)
+        mse = nn.functional.mse_loss(y_hat / 4000.0, y)
 
         self.log("test_mse", mse.detach())
         return {"prediction": y_hat}
@@ -163,3 +155,11 @@ class ADRInspired(pl.LightningModule):
             return [optimizer], [lr_scheduler]
         else:
             raise NotImplementedError("Lr scheduler not defined.")
+
+    def on_validation_epoch_end(self):
+        torch.cuda.empty_cache()
+        sch = self.lr_schedulers()
+        if isinstance(sch, torch.optim.lr_scheduler.ReduceLROnPlateau):
+            sch.step(self.trainer.callback_metrics["val_loss"])
+        elif isinstance(sch, torch.optim.lr_scheduler.ExponentialLR):
+            sch.step()

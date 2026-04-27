@@ -19,10 +19,10 @@ class PVDatamodule(pl.LightningDataModule):
         #     self.predict_dataset = PVDataset(split="test", **self.dsconfig)
 
     def train_dataloader(self):
-        return torch.utils.data.DataLoader(self.train_dataset, batch_size=self.train_params.train_batch_size, shuffle=True)
+        return torch.utils.data.DataLoader(self.train_dataset, batch_size=self.train_params.train_batch_size, num_workers=self.train_params.num_workers, shuffle=True)
 
     def val_dataloader(self):
-        return torch.utils.data.DataLoader(self.valid_dataset, batch_size=self.train_params.valid_batch_size)
+        return torch.utils.data.DataLoader(self.valid_dataset, batch_size=self.train_params.valid_batch_size, num_workers=self.train_params.num_workers)
 
     def test_dataloader(self):
-        return torch.utils.data.DataLoader(self.test_dataset, batch_size=self.train_params.test_batch_size)
+        return torch.utils.data.DataLoader(self.test_dataset, batch_size=self.train_params.test_batch_size, num_workers=self.train_params.num_workers)
