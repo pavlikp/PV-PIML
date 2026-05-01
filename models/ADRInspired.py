@@ -38,7 +38,12 @@ class ADRInspired(pl.LightningModule):
         self.k_rsh = nn.Parameter(torch.tensor(1e-3, requires_grad=True))
 
     def forward(self, x, metadata):
-        (dhi, ghi, dni, wind_speed, temp_air, unix_timestamps) = x
+        dhi = x['dhi']
+        ghi = x['ghi']
+        dni = x['dni']
+        wind_speed = x['wind_speed']
+        temp_air = x['temp_air']
+        unix_timestamps = x['unix_timestamps']
 
         batch_size = len(unix_timestamps)
 

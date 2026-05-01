@@ -30,5 +30,5 @@ train_params:
 
 dataset:
   path: 'C:\Users\peter\Repos\ENFIELD-data\processed_unpack\nwp_0h'
-  country: "Germany"
+  country: "Slovakia"
   installation: "top"

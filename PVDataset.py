@@ -69,7 +69,12 @@ class PVDataset(Dataset):
 
         out = torch.tensor(df['production'].values)
 
-        return (dhi, ghi, dni, wind_speed, temp_air, unix_timestamps), out, self.installation_metadata.to_dict()
+        return {'dhi': dhi,
+                'ghi': ghi,
+                'dni': dni,
+                'wind_speed': wind_speed,
+                'temp_air': temp_air,
+                'unix_timestamps': unix_timestamps}, out, self.installation_metadata.to_dict()
 
     def _split_samples_in_folder(self, folder):
         TEST_FRACTION = 5
