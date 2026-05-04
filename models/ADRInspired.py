@@ -28,7 +28,7 @@ class ADRInspired(pl.LightningModule):
         self.automatic_optimization = False
 
         # Parameters
-        self.albedo = nn.Parameter(torch.tensor(0.25, requires_grad=True))
+        self.albedo = nn.Parameter(torch.tensor(0.25, requires_grad=True)) # TODO: investigate why this does not get updated
 
         self.u0 = nn.Parameter(torch.tensor(25.0, requires_grad=True))
         self.u1 = nn.Parameter(torch.tensor(7.0, requires_grad=True))
@@ -149,4 +149,4 @@ class ADRInspired(pl.LightningModule):
             sch.step()
         
         for name, param in self.named_parameters():
-            print(f"\n{name}: {param.detach().cpu().numpy():.3f}\n")
+            print(f"{name}: {param.detach().cpu().numpy():.3f}")
