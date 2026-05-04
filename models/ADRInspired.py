@@ -1,3 +1,5 @@
+from unicodedata import name
+
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
@@ -37,7 +39,7 @@ class ADRInspired(pl.LightningModule):
         self.k_rs = nn.Parameter(torch.tensor(1e-3, requires_grad=True))
         self.k_rsh = nn.Parameter(torch.tensor(1e-3, requires_grad=True))
 
-    def forward(self, x, metadata):
+    def forward(self, x):
         dhi = x['dhi']
         ghi = x['ghi']
         dni = x['dni']
@@ -47,37 +49,16 @@ class ADRInspired(pl.LightningModule):
 
         batch_size = len(unix_timestamps)
 
-        solar_zenith = torch.zeros_like(unix_timestamps)
-        solar_azimuth = torch.zeros_like(unix_timestamps)
         tilt = torch.zeros(batch_size, 1).to(self.device)
         orient = torch.zeros(batch_size, 1).to(self.device)
-        for i in range(batch_size):
-            loc = location.Location(latitude=metadata["Latitude"][i].item(),
-                                    longitude=metadata["Longitude"][i].item(),
-                                    altitude=metadata["Elevation"][i].item(),
-                                    tz="UTC")
-            solpos = loc.get_solarposition(pd.to_datetime(unix_timestamps[i].cpu(), unit="s") - pd.Timedelta(minutes=7.5))
-            solar_zenith[i] = torch.deg2rad(torch.tensor(solpos.apparent_zenith.values)).to(self.device)
-            solar_azimuth[i] = torch.deg2rad(torch.tensor(solpos.azimuth.values)).to(self.device)
-
-            tilt[i] = torch.deg2rad(torch.tensor(metadata['Array Tilt (degrees)'][i].item()))
-            if metadata['Orientation'][i] == 'S':
-                orient[i] = torch.deg2rad(torch.tensor(180))
-            elif metadata['Orientation'][i] == 'SW':
-                orient[i] = torch.deg2rad(torch.tensor(225))
-            elif metadata['Orientation'][i] == 'SE':
-                orient[i] = torch.deg2rad(torch.tensor(135))
-            else:
-                raise NotImplementedError(f"Orientation {metadata['Orientation'][i]} not implemented!")
-        
 
         sky_diffuse = dhi * ((1 + torch.cos(tilt)) * 0.5)
         ground_diffuse = ghi * (self.albedo * (1 - torch.cos(tilt)) * 0.5)
 
         projection = (
-            torch.cos(tilt) * torch.cos(solar_zenith) +
-            torch.sin(tilt) * torch.sin(solar_zenith) *
-            torch.cos(solar_azimuth - orient))
+            torch.cos(tilt) * torch.cos(x['solar_zenith']) +
+            torch.sin(tilt) * torch.sin(x['solar_zenith']) *
+            torch.cos(x['solar_azimuth'] - orient))
 
         projection = torch.clip(projection, -1, 1)
 
@@ -106,19 +87,15 @@ class ADRInspired(pl.LightningModule):
 
         eta = self.k_a * ((1 + self.k_rs + self.k_rsh) * v - self.k_rs * s - self.k_rsh * v**2)
 
-        # Set the desired array size and the irradiance level needed to achieve this output:
-        P_STC = metadata["System Size (watts)"].unsqueeze(1)
-        G_STC = 1000.   # (W/m2)
-
-        return P_STC * eta * (poa_global / G_STC)
+        return eta * s
 
     def training_step(self, batch, batch_idx):
         opt = self.optimizers()
 
-        x, y, metadata = batch
+        x, y, meta = batch
 
-        y_hat = self(x, metadata)
-        loss = self.criterion(y_hat / 4000.0, y)
+        y_hat = self(x)
+        loss = self.criterion(y_hat, y)
             
         self.manual_backward(loss)
         opt.step()
@@ -127,21 +104,23 @@ class ADRInspired(pl.LightningModule):
         return {"prediction": y_hat, "loss": loss.detach()}
 
     def validation_step(self, batch, batch_idx):
-        x, y, metadata = batch
+        x, y, meta = batch
 
-        y_hat = self(x, metadata)
-        loss = self.criterion(y_hat / 4000.0, y)
+        y_hat = self(x)
+        loss = self.criterion(y_hat, y)
 
         self.log("val_loss", loss.detach())
         return {"prediction": y_hat, "loss": loss.detach()}
 
     def test_step(self, batch, batch_idx):
-        x, y, metadata = batch
+        x, y, meta = batch
 
-        y_hat = self(x, metadata)
-        mse = nn.functional.mse_loss(y_hat / 4000.0, y)
+        y_hat = self(x)
+        mse = nn.functional.mse_loss(y_hat, y)
+        mae_w = nn.functional.l1_loss(y_hat * meta["system_size"].unsqueeze(1), y * meta["system_size"].unsqueeze(1))
 
         self.log("test_mse", mse.detach())
+        self.log("test_mae_watts", mae_w.detach())
         return {"prediction": y_hat}
 
     def configure_optimizers(self):
@@ -168,3 +147,6 @@ class ADRInspired(pl.LightningModule):
             sch.step(self.trainer.callback_metrics["val_loss"])
         elif isinstance(sch, torch.optim.lr_scheduler.ExponentialLR):
             sch.step()
+        
+        for name, param in self.named_parameters():
+            print(f"\n{name}: {param.detach().cpu().numpy():.3f}\n")
