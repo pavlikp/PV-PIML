@@ -15,11 +15,15 @@ class PVDatasetWithHistory(Dataset):
     def __init__(self,
                  path,
                  previous_days=5,
+                 target_variables=['dhi', 'ghi', 'dni', 'wind_speed', 'temp_air', 'unix_timestamps', 'solar_zenith', 'solar_azimuth'],
+                 history_variables=['dhi', 'ghi', 'dni', 'wind_speed', 'temp_air', 'unix_timestamps', 'solar_zenith', 'solar_azimuth', 'production'],
                  countries=None,
                  installations=None,
                  split="train",):
         self.path = path
         self.previous_days = previous_days
+        self.target_variables = target_variables
+        self.history_variables = history_variables
         self.countries = countries
         self.installations = installations
         self.split = split
@@ -37,7 +41,7 @@ class PVDatasetWithHistory(Dataset):
         self.metadata = self.metadata.sort_values("date", ascending=False)
 
         TEST_FRACTION = 5
-        VALID_FRACTION = 8
+        VALID_FRACTION = 256
 
         test_samples = self.metadata.iloc[-len(self.metadata)//TEST_FRACTION:]
         train_samples_full = self.metadata.iloc[:-len(self.metadata)//TEST_FRACTION]
@@ -65,14 +69,20 @@ class PVDatasetWithHistory(Dataset):
 
         inputs = {}
 
-        inputs['dhi'] = torch.tensor(df_present['aswdir_s_i'].values)
-        inputs['ghi'] = torch.tensor(df_present['ghi'].values)
-        inputs['dni'] = torch.tensor(df_present['aswdifd_s_i'].values)
-        inputs['wind_speed'] = torch.tensor(df_present['wind_speed'].values)
-        inputs['temp_air'] = torch.tensor(df_present['t_2m'].values) - 273.15 # convert from K to °C
-        inputs['unix_timestamps'] = torch.tensor(df_present["datetime"].apply(lambda x: x.value // 10 ** 9).values)
-        
-        inputs['solar_zenith'], inputs['solar_azimuth'] = self._solar_position(df_present["datetime"], installation_metadata)
+        if 'dhi' in self.target_variables:
+            inputs['dhi'] = torch.tensor(df_present['aswdir_s_i'].values).float()
+        if 'ghi' in self.target_variables:
+            inputs['ghi'] = torch.tensor(df_present['ghi'].values).float()
+        if 'dni' in self.target_variables:
+            inputs['dni'] = torch.tensor(df_present['aswdifd_s_i'].values).float()
+        if 'wind_speed' in self.target_variables:
+            inputs['wind_speed'] = torch.tensor(df_present['wind_speed'].values).float()
+        if 'temp_air' in self.target_variables:
+            inputs['temp_air'] = torch.tensor(df_present['t_2m'].values).float() - 273.15 # convert from K to °C
+        if 'unix_timestamps' in self.target_variables:
+            inputs['unix_timestamps'] = torch.tensor(df_present["datetime"].apply(lambda x: x.value // 10 ** 9).values).float()
+        if 'solar_zenith' in self.target_variables or 'solar_azimuth' in self.target_variables:
+            inputs['solar_zenith'], inputs['solar_azimuth'] = self._solar_position(df_present["datetime"], installation_metadata)
 
         for i in range(1, self.previous_days + 1):
             meta_index = self.samples.iloc[idx:idx+1].index[0] - i
@@ -81,18 +91,26 @@ class PVDatasetWithHistory(Dataset):
             df_previous["date"] = previous_date
             df_previous["datetime"] = pd.to_datetime(df_previous["date"].astype(str) + " " + df_previous["time"])
 
-            inputs[f'dhi_t-{i}d'] = torch.tensor(df_previous['aswdir_s_i'].values)
-            inputs[f'ghi_t-{i}d'] = torch.tensor(df_previous['ghi'].values)
-            inputs[f'dni_t-{i}d'] = torch.tensor(df_previous['aswdifd_s_i'].values)
-            inputs[f'wind_speed_t-{i}d'] = torch.tensor(df_previous['wind_speed'].values)
-            inputs[f'temp_air_t-{i}d'] = torch.tensor(df_previous['t_2m'].values) - 273.15 # convert from K to °C
-            inputs[f'unix_timestamps_t-{i}d'] = torch.tensor(df_previous["datetime"].apply(lambda x: x.value // 10 ** 9).values)
-            inputs[f'production_t-{i}d'] = torch.tensor(df_previous['production'].values)
+            if 'dhi' in self.history_variables:
+                inputs[f'dhi_t-{i}d'] = torch.tensor(df_previous['aswdir_s_i'].values).float()
+            if 'ghi' in self.history_variables:
+                inputs[f'ghi_t-{i}d'] = torch.tensor(df_previous['ghi'].values).float()
+            if 'dni' in self.history_variables:
+                inputs[f'dni_t-{i}d'] = torch.tensor(df_previous['aswdifd_s_i'].values).float()
+            if 'wind_speed' in self.history_variables:
+                inputs[f'wind_speed_t-{i}d'] = torch.tensor(df_previous['wind_speed'].values).float()
+            if 'temp_air' in self.history_variables:
+                inputs[f'temp_air_t-{i}d'] = torch.tensor(df_previous['t_2m'].values).float() - 273.15 # convert from K to °C
+            if 'unix_timestamps' in self.history_variables:
+                inputs[f'unix_timestamps_t-{i}d'] = torch.tensor(df_previous["datetime"].apply(lambda x: x.value // 10 ** 9).values).float()
+            if 'production' in self.history_variables:
+                inputs[f'production_t-{i}d'] = torch.tensor(df_previous['production'].values).float()
 
-            inputs[f'solar_zenith_t-{i}d'], inputs[f'solar_azimuth_t-{i}d'] = self._solar_position(df_previous["datetime"], installation_metadata)
+            if 'solar_zenith' in self.history_variables or 'solar_azimuth' in self.history_variables:
+                inputs[f'solar_zenith_t-{i}d'], inputs[f'solar_azimuth_t-{i}d'] = self._solar_position(df_previous["datetime"], installation_metadata)
 
 
-        out = torch.tensor(df_present['production'].values * 4000) # convert from kW to W
+        out = torch.tensor(df_present['production'].values * 4000).float() # convert from kW to W
         out = out / installation_metadata["System Size (watts)"] # normalize by system size
 
         meta = {}
@@ -103,6 +121,30 @@ class PVDatasetWithHistory(Dataset):
         meta["country"] = self.samples.iloc[idx].country
         meta["installation"] = self.samples.iloc[idx].installation_ID
         meta["date"] = self.samples.iloc[idx].date
+        meta["tilt"] = torch.deg2rad(torch.tensor(installation_metadata['Array Tilt (degrees)'])).float()
+        if meta["tilt"].isnan():
+            meta["tilt"] = torch.deg2rad(torch.tensor(installation_metadata['Latitude'] * 0.85)).float() # rule of thumb for tilt if not provided
+        if installation_metadata['Orientation'] == 'N':
+            meta["orientation"] = torch.deg2rad(torch.tensor(0)).float()
+        elif installation_metadata['Orientation'] == 'NE':
+            meta["orientation"] = torch.deg2rad(torch.tensor(45)).float()
+        elif installation_metadata['Orientation'] == 'E':
+            meta["orientation"] = torch.deg2rad(torch.tensor(90)).float()
+        elif installation_metadata['Orientation'] == 'SE':
+            meta["orientation"] = torch.deg2rad(torch.tensor(135)).float()
+        elif installation_metadata['Orientation'] == 'S':
+            meta["orientation"] = torch.deg2rad(torch.tensor(180)).float()
+        elif installation_metadata['Orientation'] == 'SW':
+            meta["orientation"] = torch.deg2rad(torch.tensor(225)).float()
+        elif installation_metadata['Orientation'] == 'W':
+            meta["orientation"] = torch.deg2rad(torch.tensor(270)).float()
+        elif installation_metadata['Orientation'] == 'NW':
+            meta["orientation"] = torch.deg2rad(torch.tensor(315)).float()
+        elif installation_metadata['Orientation'] == 'EW': # I guess?
+            meta["orientation"] = torch.deg2rad(torch.tensor(180)).float()
+            meta["tilt"] = torch.deg2rad(torch.tensor(0)).float()
+        else:
+            raise NotImplementedError(f"Orientation {installation_metadata['Orientation']} not implemented!")
 
         return inputs, out, meta
     
@@ -114,7 +156,7 @@ class PVDatasetWithHistory(Dataset):
                                 altitude=installation_metadata["Elevation"],
                                 tz="UTC")
         solpos = loc.get_solarposition(datetimes - pd.Timedelta(minutes=7.5))
-        solar_zenith = torch.deg2rad(torch.tensor(solpos.apparent_zenith.values))
-        solar_azimuth = torch.deg2rad(torch.tensor(solpos.azimuth.values))
+        solar_zenith = torch.deg2rad(torch.tensor(solpos.apparent_zenith.values)).float()
+        solar_azimuth = torch.deg2rad(torch.tensor(solpos.azimuth.values)).float()
 
         return solar_zenith, solar_azimuth

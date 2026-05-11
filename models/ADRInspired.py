@@ -1,21 +1,12 @@
-from unicodedata import name
-
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
-
-import pvlib
-from pvlib import iotools, location
-
-import pandas as pd
 
 class ADRInspired(pl.LightningModule):
 
     def __init__(self, config):
         super().__init__()
         self.save_hyperparameters()
-
-        self.personal_device = torch.device(config.train_params.device)
 
         if config.train_params.loss == "mse":
             self.criterion = nn.MSELoss()
@@ -39,7 +30,7 @@ class ADRInspired(pl.LightningModule):
         self.k_rs = nn.Parameter(torch.tensor(1e-3, requires_grad=True))
         self.k_rsh = nn.Parameter(torch.tensor(1e-3, requires_grad=True))
 
-    def forward(self, x):
+    def forward(self, x, metadata):
         dhi = x['dhi']
         ghi = x['ghi']
         dni = x['dni']
@@ -49,8 +40,8 @@ class ADRInspired(pl.LightningModule):
 
         batch_size = len(unix_timestamps)
 
-        tilt = torch.zeros(batch_size, 1).to(self.device)
-        orient = torch.zeros(batch_size, 1).to(self.device)
+        tilt = metadata["tilt"].unsqueeze(1)
+        orient = metadata["orientation"].unsqueeze(1)
 
         sky_diffuse = dhi * ((1 + torch.cos(tilt)) * 0.5)
         ground_diffuse = ghi * (self.albedo * (1 - torch.cos(tilt)) * 0.5)
@@ -94,7 +85,7 @@ class ADRInspired(pl.LightningModule):
 
         x, y, meta = batch
 
-        y_hat = self(x)
+        y_hat = self(x, meta)
         loss = self.criterion(y_hat, y)
             
         self.manual_backward(loss)
@@ -106,7 +97,7 @@ class ADRInspired(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         x, y, meta = batch
 
-        y_hat = self(x)
+        y_hat = self(x, meta)
         loss = self.criterion(y_hat, y)
 
         self.log("val_loss", loss.detach())
@@ -115,7 +106,7 @@ class ADRInspired(pl.LightningModule):
     def test_step(self, batch, batch_idx):
         x, y, meta = batch
 
-        y_hat = self(x)
+        y_hat = self(x, meta)
         mse = nn.functional.mse_loss(y_hat, y)
         mae_w = nn.functional.l1_loss(y_hat * meta["system_size"].unsqueeze(1), y * meta["system_size"].unsqueeze(1))
 

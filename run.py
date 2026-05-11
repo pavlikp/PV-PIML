@@ -18,8 +18,6 @@ from pytorch_lightning.loggers import WandbLogger
 
 from PVDatamodule import PVDatamodule
 
-from models import ADRInspired as ADRInspired
-
 import datetime
 
 
@@ -38,7 +36,11 @@ def main(config, run_name, checkpoint=None, seed=1, test_only=False):
     datamodel = PVDatamodule(confdict)
 
     if confdict.architecture == "ADRInspired":
+        from models import ADRInspired as ADRInspired
         model = ADRInspired(confdict)
+    elif confdict.architecture == "PVUNet":
+        from models.PVUNet import PVUNet
+        model = PVUNet(confdict)
     else:
         raise NotImplementedError(f"Architecture {config.architecture} not implemented!")
 
