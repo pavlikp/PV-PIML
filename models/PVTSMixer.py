@@ -2,10 +2,10 @@ import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 
-from models.modules.UNet1D import UNet1D
+from models.modules.TSMixerx import TSMixerx
 from utils.normalize import normalize_inputs
 
-class PVUNet(pl.LightningModule):
+class PVTSMixer(pl.LightningModule):
     def __init__(self, config):
         super().__init__()
         self.save_hyperparameters()
@@ -20,23 +20,35 @@ class PVUNet(pl.LightningModule):
         self.lr_sch_params = config.train_params.lr_scheduler
         self.automatic_optimization = False
 
-        self.model = UNet1D(config.model_params.kernel_size, config.model_params.out_channels, config.model_params.conv_shape)
+        self.model = TSMixerx(**config.model_params)
 
-    def forward(self, x):
+    def forward(self, x, meta):
         x_norm = normalize_inputs(x)
+        insample_y = x_norm.pop("production").unsqueeze(-1)
+
         n_channels = len(x_norm.keys())
         n_batch, n_seq = x_norm[list(x_norm.keys())[0]].shape
 
-        input_tensor = torch.zeros(n_batch, n_channels, n_seq).to(self.device)
-
+        futr_exog = torch.zeros(n_batch, n_channels, n_seq, 1).to(self.device)
         for i, key in enumerate(x_norm.keys()):
-            input_tensor[:, i, :] = x_norm[key]
+            futr_exog[:, i, :, 0] = x_norm[key]
 
-        return self.model(input_tensor)
+        stat_exog = torch.zeros(n_batch, 2).to(self.device)
+        for i, key in enumerate(["tilt", "orientation"]):
+            stat_exog[:, i] = meta[key]
+
+        batch = {
+            "insample_y": insample_y,
+            "hist_exog": None,
+            "futr_exog": futr_exog,
+            "stat_exog": None
+        }
+
+        return self.model(batch)
     
     def training_step(self, batch, batch_idx):
         x, y, meta = batch
-        y_hat = self(x)
+        y_hat = self(x, meta)
         loss = self.criterion(y_hat.squeeze(), y)
         self.log("train_loss", loss)
 
@@ -49,20 +61,20 @@ class PVUNet(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         x, y, meta = batch
-        y_hat = self(x)
-        loss = self.criterion(y_hat, y)
+        y_hat = self(x, meta)
+        loss = self.criterion(y_hat.squeeze(), y)
         self.log("val_loss", loss)
 
         return loss
 
     def test_step(self, batch, batch_idx):
         x, y, meta = batch
-        y_hat = self(x)
+        y_hat = self(x, meta)
 
-        loss = self.criterion(y_hat, y)
+        loss = self.criterion(y_hat.squeeze(), y)
 
-        mse = nn.functional.mse_loss(y_hat, y)
-        mae_w = nn.functional.l1_loss(y_hat * meta["system_size"].unsqueeze(1), y * meta["system_size"].unsqueeze(1))
+        mse = nn.functional.mse_loss(y_hat.squeeze(), y)
+        mae_w = nn.functional.l1_loss(y_hat.squeeze() * meta["system_size"].unsqueeze(1), y * meta["system_size"].unsqueeze(1))
 
         self.log("test_mse", mse.detach())
         self.log("test_mae_watts", mae_w.detach())

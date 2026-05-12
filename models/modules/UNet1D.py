@@ -28,17 +28,16 @@ class UNet1D(nn.Module):
         
         self.pool = nn.MaxPool1d(kernel_size=2)
         self.upsample = nn.Upsample(scale_factor=2)
-        self.drop = nn.Dropout1d(p=0.25)
             
     def make_conv_block(self, in_ch, out_ch, kernel_size):
         
         return nn.Sequential(
             nn.Conv1d(in_ch, out_ch, kernel_size, padding='same'),
             nn.ReLU(),
-            nn.Dropout1d(p=0.25),
+            nn.Dropout1d(p=0.1),
             nn.Conv1d(out_ch, out_ch, kernel_size, padding='same'),
             nn.ReLU(),
-            nn.Dropout1d(p=0.25),
+            nn.Dropout1d(p=0.1),
             )
     
         

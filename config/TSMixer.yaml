@@ -1,4 +1,4 @@
-architecture: "PVUNet"
+architecture: "TSMixer"
 # Parameters for training model
 train_params:
   device: cuda:0
@@ -28,21 +28,12 @@ train_params:
   lr: 1e-04
   loss: "mse"
 model_params:
-  kernel_size: 3
-  out_channels: 1
-  conv_shape:
-      [
-        ["1", [47, 64]],
-        ["2", [64, 128]],
-        ["3", [128, 256]],
-        ["4", [256, 512]],
-        ["5", [512, 1024]],
-        ["6", [1536, 512]],
-        ["7", [768, 256]],
-        ["8", [384, 128]],
-        ["9", [192, 64]]
-      ]
-
+  h: 96
+  input_size: 480
+  n_series: 1
+  futr_exog_size: 7
+  stat_exog_size: 0
 dataset:
   path: 'C:\Users\peter\Repos\ENFIELD-data\processed_unpack\nwp_0h'
   previous_days: 5
+  continuous: true

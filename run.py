@@ -41,6 +41,9 @@ def main(config, run_name, checkpoint=None, seed=1, test_only=False):
     elif confdict.architecture == "PVUNet":
         from models.PVUNet import PVUNet
         model = PVUNet(confdict)
+    elif confdict.architecture == "TSMixer":
+        from models.PVTSMixer import PVTSMixer
+        model = PVTSMixer(confdict)
     else:
         raise NotImplementedError(f"Architecture {config.architecture} not implemented!")
 
@@ -81,7 +84,7 @@ def main(config, run_name, checkpoint=None, seed=1, test_only=False):
         trainer.fit(model=model, datamodule=datamodel, ckpt_path=checkpoint)
         trainer.test(model=model, datamodule=datamodel, ckpt_path=model_ckpt.best_model_path, weights_only=False)
     else:
-        trainer.test(model=model, datamodule=datamodel, ckpt_path=checkpoint)
+        trainer.test(model=model, datamodule=datamodel, ckpt_path=checkpoint, weights_only=False)
 
 
 if __name__ == "__main__":
