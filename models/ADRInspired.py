@@ -19,7 +19,7 @@ class ADRInspired(pl.LightningModule):
         self.automatic_optimization = False
 
         # Parameters
-        self.albedo = nn.Parameter(torch.tensor(0.25, requires_grad=True)) # TODO: investigate why this does not get updated
+        self.albedo = nn.Parameter(torch.tensor(0.25, requires_grad=True))
 
         self.u0 = nn.Parameter(torch.tensor(25.0, requires_grad=True))
         self.u1 = nn.Parameter(torch.tensor(7.0, requires_grad=True))

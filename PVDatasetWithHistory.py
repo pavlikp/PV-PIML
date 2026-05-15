@@ -108,7 +108,9 @@ class PVDatasetWithHistory(Dataset):
                 if 'unix_timestamps' in self.history_variables:
                     inputs[f'unix_timestamps'] = torch.cat((torch.tensor(df_previous["datetime"].apply(lambda x: x.value // 10 ** 9).values).float(), inputs[f'unix_timestamps']), dim=0)
                 if 'production' in self.history_variables:
-                    inputs[f'production'] = torch.cat((torch.tensor(df_previous['production'].values).float(), inputs[f'production']), dim=0)
+                    prod = torch.tensor(df_previous['production'].values).float()
+                    prod = prod * 4000 / installation_metadata["System Size (watts)"] # convert from kW to W and normalize by system size
+                    inputs[f'production'] = torch.cat((prod, inputs[f'production']), dim=0)
 
                 if 'solar_zenith' in self.history_variables or 'solar_azimuth' in self.history_variables:
                     solar_zenith_t, solar_azimuth_t = self._solar_position(df_previous["datetime"], installation_metadata)
@@ -128,7 +130,9 @@ class PVDatasetWithHistory(Dataset):
                 if 'unix_timestamps' in self.history_variables:
                     inputs[f'unix_timestamps_t-{i}d'] = torch.tensor(df_previous["datetime"].apply(lambda x: x.value // 10 ** 9).values).float()
                 if 'production' in self.history_variables:
-                    inputs[f'production_t-{i}d'] = torch.tensor(df_previous['production'].values).float()
+                    prod = torch.tensor(df_previous['production'].values).float()
+                    prod = prod * 4000 / installation_metadata["System Size (watts)"] # convert from kW to W and normalize by system size
+                    inputs[f'production_t-{i}d'] = prod
 
                 if 'solar_zenith' in self.history_variables or 'solar_azimuth' in self.history_variables:
                     inputs[f'solar_zenith_t-{i}d'], inputs[f'solar_azimuth_t-{i}d'] = self._solar_position(df_previous["datetime"], installation_metadata)
