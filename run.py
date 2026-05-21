@@ -47,6 +47,9 @@ def main(config, run_name, checkpoint=None, seed=1, test_only=False):
     elif confdict.architecture == "TSMixerADRAugment":
         from models.PVTSMixerADRAugment import PVTSMixerADRAugment
         model = PVTSMixerADRAugment(confdict)
+    elif confdict.architecture == "TSMixerADRResidual":
+        from models.PVTSMixerADRResidual import PVTSMixerADRResidual
+        model = PVTSMixerADRResidual(confdict)
     else:
         raise NotImplementedError(f"Architecture {config.architecture} not implemented!")
 

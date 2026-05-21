@@ -19,8 +19,7 @@ train_params:
     strict: false
     verbose: true
     monitor: "val_loss"
-    min_delta: 0.00001
-    patience: 16
+    patience: 8
   lr_scheduler:
     name: "ExponentialLR"
     kwargs:

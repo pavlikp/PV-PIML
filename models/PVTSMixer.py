@@ -44,7 +44,12 @@ class PVTSMixer(pl.LightningModule):
             "stat_exog": None
         }
 
-        return self.model(batch)
+        model_output = self.model(batch)
+
+        model_output[x['ghi'][:,-model_output.shape[1]:] == 0] = 0
+        model_output[model_output < 0] = 0
+
+        return model_output
     
     def training_step(self, batch, batch_idx):
         x, y, meta = batch
@@ -75,9 +80,11 @@ class PVTSMixer(pl.LightningModule):
 
         mse = nn.functional.mse_loss(y_hat.squeeze(), y)
         mae_w = nn.functional.l1_loss(y_hat.squeeze() * meta["system_size"].unsqueeze(1), y * meta["system_size"].unsqueeze(1))
+        mape_total = torch.abs((y.sum() - y_hat.sum()) / (y.sum() + 1e-6)) * 100
 
         self.log("test_mse", mse.detach())
         self.log("test_mae_watts", mae_w.detach())
+        self.log("test_mape_total", mape_total.detach())
         self.log("test_loss", loss.detach())
 
         return loss

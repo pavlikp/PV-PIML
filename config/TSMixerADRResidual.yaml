@@ -1,4 +1,4 @@
-architecture: "TSMixer"
+architecture: "TSMixerADRResidual"
 # Parameters for training model
 train_params:
   device: cuda:0
@@ -30,7 +30,7 @@ model_params:
   h: 96
   input_size: 480
   n_series: 1
-  futr_exog_size: 7
+  futr_exog_size: 8
   stat_exog_size: 0
 dataset:
   path: 'C:\Users\peter\Repos\ENFIELD-data\processed_unpack\nwp_0h'

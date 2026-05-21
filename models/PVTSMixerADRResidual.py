@@ -6,7 +6,7 @@ from models.modules.TSMixerx import TSMixerx
 from models.modules.ADRModule import ADRModule
 from utils.normalize import normalize_inputs
 
-class PVTSMixerADRAugment(pl.LightningModule):
+class PVTSMixerADRResidual(pl.LightningModule):
     def __init__(self, config):
         super().__init__()
         self.save_hyperparameters()
@@ -42,6 +42,8 @@ class PVTSMixerADRAugment(pl.LightningModule):
         for i, key in enumerate(["tilt", "orientation"]):
             stat_exog[:, i] = meta[key]
 
+        insample_y = insample_y - adr_output[:, :insample_y.shape[1]].unsqueeze(2)
+
         batch = {
             "insample_y": insample_y,
             "hist_exog": None,
@@ -49,7 +51,12 @@ class PVTSMixerADRAugment(pl.LightningModule):
             "stat_exog": None
         }
 
-        return self.model(batch)
+        model_output = adr_output[:, insample_y.shape[1]:].unsqueeze(2) + self.model(batch)
+
+        model_output[x['ghi'][:,-model_output.shape[1]:] == 0] = 0
+        model_output[model_output < 0] = 0
+
+        return model_output
     
     def training_step(self, batch, batch_idx):
         x, y, meta = batch

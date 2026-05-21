@@ -38,12 +38,12 @@ class PVDatasetWithHistory(Dataset):
             self.metadata = self.full_metadata[self.full_metadata["country"].isin(self.countries)]
 
         if self.installations is not None:
-            self.metadata = self.full_metadata[self.full_metadata["installation"].isin(self.installations)]
+            self.metadata = self.full_metadata[self.full_metadata["installation_ID"].isin(self.installations)]
         
         self.metadata = self.metadata.sort_values("date", ascending=False)
 
         TEST_FRACTION = 5
-        VALID_FRACTION = 256
+        VALID_FRACTION = 32
 
         test_samples = self.metadata.iloc[-len(self.metadata)//TEST_FRACTION:]
         train_samples_full = self.metadata.iloc[:-len(self.metadata)//TEST_FRACTION]
