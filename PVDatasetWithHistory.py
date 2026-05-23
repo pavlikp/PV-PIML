@@ -43,7 +43,7 @@ class PVDatasetWithHistory(Dataset):
         self.metadata = self.metadata.sort_values("date", ascending=False)
 
         TEST_FRACTION = 5
-        VALID_FRACTION = 32
+        VALID_FRACTION = 8
 
         test_samples = self.metadata.iloc[-len(self.metadata)//TEST_FRACTION:]
         train_samples_full = self.metadata.iloc[:-len(self.metadata)//TEST_FRACTION]

@@ -19,7 +19,7 @@ train_params:
     strict: false
     verbose: true
     monitor: "val_loss"
-    patience: 8
+    patience: 4
   lr_scheduler:
     name: "ExponentialLR"
     kwargs:
@@ -32,9 +32,11 @@ model_params:
   n_series: 1
   futr_exog_size: 7
   stat_exog_size: 0
+  ghi_zero_mask: true
+  activation: "gelu"
 dataset:
   path: 'C:\Users\peter\Repos\ENFIELD-data\processed_unpack\nwp_0h'
   previous_days: 5
-  countries: ["Italy"]
-  installations: [16188]
+  countries: ["Germany"]
+  installations: [50653]
   continuous: true

@@ -20,6 +20,16 @@ class PVTSMixer(pl.LightningModule):
         self.lr_sch_params = config.train_params.lr_scheduler
         self.automatic_optimization = False
 
+        self.ghi_zero_mask = config.model_params.ghi_zero_mask
+        if config.model_params.activation == "sigmoid":
+            self.activation = torch.nn.Sigmoid()
+        elif config.model_params.activation == "gelu":
+            self.activation = torch.nn.GELU()
+        elif config.model_params.activation == None or config.model_params.activation == "none":
+            self.activation = torch.nn.Identity()
+        else:
+            raise NotImplementedError(f"Activation {config.model_params.activation} not implemented!")
+
         self.model = TSMixerx(**config.model_params)
 
     def forward(self, x, meta):
@@ -46,8 +56,11 @@ class PVTSMixer(pl.LightningModule):
 
         model_output = self.model(batch)
 
-        model_output[x['ghi'][:,-model_output.shape[1]:] == 0] = 0
-        model_output[model_output < 0] = 0
+        model_output = self.activation(model_output)
+
+        if self.ghi_zero_mask or not self.training:
+            mask = (x['ghi'][:, -model_output.shape[1]:] != 0).float()
+            model_output = model_output * mask.unsqueeze(2)
 
         return model_output
     
@@ -67,25 +80,34 @@ class PVTSMixer(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         x, y, meta = batch
         y_hat = self(x, meta)
-        loss = self.criterion(y_hat.squeeze(), y)
+        y_hat_nonneg = y_hat.clone()
+        y_hat_nonneg[y_hat_nonneg < 0] = 0
+        loss = self.criterion(y_hat_nonneg.squeeze(), y)
         self.log("val_loss", loss)
+
+        if batch_idx == 0:
+            self.plot_outputs(y.cpu().detach().numpy(), y_hat.cpu().detach().numpy(), meta, "valid")
 
         return loss
 
     def test_step(self, batch, batch_idx):
         x, y, meta = batch
         y_hat = self(x, meta)
+        y_hat_nonneg = y_hat.clone()
+        y_hat_nonneg[y_hat_nonneg < 0] = 0
+        loss = self.criterion(y_hat_nonneg.squeeze(), y)
 
-        loss = self.criterion(y_hat.squeeze(), y)
-
-        mse = nn.functional.mse_loss(y_hat.squeeze(), y)
-        mae_w = nn.functional.l1_loss(y_hat.squeeze() * meta["system_size"].unsqueeze(1), y * meta["system_size"].unsqueeze(1))
-        mape_total = torch.abs((y.sum() - y_hat.sum()) / (y.sum() + 1e-6)) * 100
+        mse = nn.functional.mse_loss(y_hat_nonneg.squeeze(), y)
+        mae_w = nn.functional.l1_loss(y_hat_nonneg.squeeze() * meta["system_size"].unsqueeze(1), y * meta["system_size"].unsqueeze(1))
+        mape_total = torch.abs((y.sum() - y_hat_nonneg.sum()) / (y.sum() + 1e-6)) * 100
 
         self.log("test_mse", mse.detach())
         self.log("test_mae_watts", mae_w.detach())
         self.log("test_mape_total", mape_total.detach())
         self.log("test_loss", loss.detach())
+
+        if batch_idx == 0:
+            self.plot_outputs(y.cpu().detach().numpy(), y_hat_nonneg.cpu().detach().numpy(), meta, "test")
 
         return loss
     
@@ -113,3 +135,17 @@ class PVTSMixer(pl.LightningModule):
             sch.step(self.trainer.callback_metrics["val_loss"])
         elif isinstance(sch, torch.optim.lr_scheduler.ExponentialLR):
             sch.step()
+
+    def plot_outputs(self, target, pred, metadata, stage):
+        import matplotlib.pyplot as plt
+        fig, axes = plt.subplots(2, 2, figsize=(12, 12), layout='constrained')
+        for i in range(4):
+            axes[i // 2, i % 2].plot(target[i], label="PV Output", color="black", linewidth=2)
+            axes[i // 2, i % 2].plot(pred[i], label="Forecast", color="red", linewidth=2)
+            axes[i // 2, i % 2].set_xlabel("Time")
+            axes[i // 2, i % 2].set_ylabel("Efficiency")
+            axes[i // 2, i % 2].legend()
+            axes[i // 2, i % 2].set_ylim(-0.2,1)
+            axes[i // 2, i % 2].set_title(f"{metadata['country'][i]} {metadata['installation'][i]} {metadata['date'][i]}")
+
+        self.logger.log_image(key=f"{stage}_outputs_plot", images=[fig])

@@ -22,7 +22,7 @@ class PVDatamodule(pl.LightningDataModule):
         return torch.utils.data.DataLoader(self.train_dataset, batch_size=self.train_params.train_batch_size, num_workers=self.train_params.num_workers, persistent_workers=True, shuffle=True)
 
     def val_dataloader(self):
-        return torch.utils.data.DataLoader(self.valid_dataset, batch_size=self.train_params.valid_batch_size, num_workers=self.train_params.num_workers, persistent_workers=True)
+        return torch.utils.data.DataLoader(self.valid_dataset, batch_size=self.train_params.valid_batch_size, num_workers=1, persistent_workers=True)
 
     def test_dataloader(self):
-        return torch.utils.data.DataLoader(self.test_dataset, batch_size=self.train_params.test_batch_size, num_workers=self.train_params.num_workers, persistent_workers=True)
+        return torch.utils.data.DataLoader(self.test_dataset, batch_size=self.train_params.test_batch_size, num_workers=1, persistent_workers=True)
