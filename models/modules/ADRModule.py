@@ -4,12 +4,11 @@ import torch.nn as nn
 
 class ADRModule(nn.Module):
     
-    def __init__(self, initialize_values={"albedo": 0.25, "ref_temp": 25.0, "u0": 25.0, "u1": 7.0, "k_a": 1.0, "k_d": -6.0, "tc_d": 0.0, "k_rs": 1e-3, "k_rsh": 1e-3}):
+    def __init__(self, initialize_values={"albedo": 0.25, "u0": 25.0, "u1": 7.0, "k_a": 1.0, "k_d": -6.0, "tc_d": 0.0, "k_rs": 1e-3, "k_rsh": 1e-3}):
         
         super().__init__()
 
         self.albedo = nn.Parameter(torch.tensor(initialize_values["albedo"], requires_grad=True))
-        self.ref_temp = nn.Parameter(torch.tensor(initialize_values["ref_temp"], requires_grad=True))
 
         self.u0 = nn.Parameter(torch.tensor(initialize_values["u0"], requires_grad=True))
         self.u1 = nn.Parameter(torch.tensor(initialize_values["u1"], requires_grad=True))
@@ -55,7 +54,7 @@ class ADRModule(nn.Module):
         s = poa_global / 1000.0
 
         # obtain the difference from reference temperature
-        dt = pv_temp - self.ref_temp
+        dt = pv_temp - 25.0
 
         s_o     = 10**(self.k_d + (dt * self.tc_d))
         s_o_ref = 10**(self.k_d)

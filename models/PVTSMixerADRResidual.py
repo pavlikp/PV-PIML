@@ -22,8 +22,11 @@ class PVTSMixerADRResidual(pl.LightningModule):
         self.automatic_optimization = False
 
         self.ghi_zero_mask = config.model_params.ghi_zero_mask
+        self.residual_kind = config.model_params.residual_kind
         if config.model_params.activation == "tanh":
             self.activation = torch.nn.Tanh()
+        elif config.model_params.activation == "exp":
+            self.activation = torch.exp
         elif config.model_params.activation == None or config.model_params.activation == "none":
             self.activation = torch.nn.Identity()
         else:
@@ -51,7 +54,11 @@ class PVTSMixerADRResidual(pl.LightningModule):
         for i, key in enumerate(["tilt", "orientation"]):
             stat_exog[:, i] = meta[key]
 
-        insample_y = insample_y - adr_output[:, :insample_y.shape[1]].unsqueeze(2)
+
+        if self.residual_kind == "additive":
+            insample_y = insample_y - adr_output[:, :insample_y.shape[1]].unsqueeze(2)
+        elif self.residual_kind == "multiplicative":
+            insample_y = torch.log((insample_y + 1e-6) / (adr_output[:, :insample_y.shape[1]].unsqueeze(2) + 1e-6))
 
         batch = {
             "insample_y": insample_y,
@@ -60,13 +67,16 @@ class PVTSMixerADRResidual(pl.LightningModule):
             "stat_exog": None
         }
 
-        model_output = adr_output[:, insample_y.shape[1]:].unsqueeze(2) + self.activation(self.model(batch))
+        if self.residual_kind == "additive":
+            model_output = adr_output[:, insample_y.shape[1]:].unsqueeze(2) + self.activation(self.model(batch))
+        elif self.residual_kind == "multiplicative":
+            model_output = adr_output[:, insample_y.shape[1]:].unsqueeze(2) * (self.activation(self.model(batch)))
 
         if self.ghi_zero_mask or not self.training:
             mask = (x['ghi'][:, -model_output.shape[1]:] != 0).float()
             model_output = model_output * mask.unsqueeze(2)
 
-        return adr_output[:, insample_y.shape[1]:].unsqueeze(2) + model_output, adr_output[:, insample_y.shape[1]:].unsqueeze(2)
+        return model_output, adr_output[:, insample_y.shape[1]:].unsqueeze(2)
     
     def training_step(self, batch, batch_idx):
         x, y, meta = batch
@@ -142,15 +152,15 @@ class PVTSMixerADRResidual(pl.LightningModule):
 
     def plot_outputs(self, target, pred, adr, metadata, stage):
         import matplotlib.pyplot as plt
-        fig, axes = plt.subplots(2, 2, figsize=(12, 12), layout='constrained')
-        for i in range(4):
-            axes[i // 2, i % 2].plot(target[i], label="PV Output", color="black", linewidth=2)
-            axes[i // 2, i % 2].plot(adr[i], label="ADR", color="green", linewidth=2)
-            axes[i // 2, i % 2].plot(pred[i], label="Forecast", color="red", linewidth=2)
-            axes[i // 2, i % 2].set_xlabel("Time")
-            axes[i // 2, i % 2].set_ylabel("Efficiency")
-            axes[i // 2, i % 2].legend()
-            axes[i // 2, i % 2].set_ylim(-0.2,1)
-            axes[i // 2, i % 2].set_title(f"{metadata['country'][i]} {metadata['installation'][i]} {metadata['date'][i]}")
+        fig, axes = plt.subplots(3, 5, figsize=(25, 15), layout='constrained')
+        for i in range(15):
+            axes[i // 5, i % 5].plot(target[i], label="PV Output", color="black", linewidth=2)
+            axes[i // 5, i % 5].plot(adr[i], label="ADR", color="green", linewidth=2)
+            axes[i // 5, i % 5].plot(pred[i], label="Forecast", color="red", linewidth=2)
+            axes[i // 5, i % 5].set_xlabel("Time")
+            axes[i // 5, i % 5].set_ylabel("Efficiency")
+            axes[i // 5, i % 5].legend(loc="upper right")
+            axes[i // 5, i % 5].set_ylim(-0.2,1)
+            axes[i // 5, i % 5].set_title(f"{metadata['country'][i]} {metadata['installation'][i]} {metadata['date'][i]}")
 
         self.logger.log_image(key=f"{stage}_outputs_plot", images=[fig])

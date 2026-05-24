@@ -25,6 +25,8 @@ class PVTSMixer(pl.LightningModule):
             self.activation = torch.nn.Sigmoid()
         elif config.model_params.activation == "gelu":
             self.activation = torch.nn.GELU()
+        elif config.model_params.activation == "exp":
+            self.activation = torch.exp
         elif config.model_params.activation == None or config.model_params.activation == "none":
             self.activation = torch.nn.Identity()
         else:
@@ -138,14 +140,14 @@ class PVTSMixer(pl.LightningModule):
 
     def plot_outputs(self, target, pred, metadata, stage):
         import matplotlib.pyplot as plt
-        fig, axes = plt.subplots(2, 2, figsize=(12, 12), layout='constrained')
-        for i in range(4):
-            axes[i // 2, i % 2].plot(target[i], label="PV Output", color="black", linewidth=2)
-            axes[i // 2, i % 2].plot(pred[i], label="Forecast", color="red", linewidth=2)
-            axes[i // 2, i % 2].set_xlabel("Time")
-            axes[i // 2, i % 2].set_ylabel("Efficiency")
-            axes[i // 2, i % 2].legend()
-            axes[i // 2, i % 2].set_ylim(-0.2,1)
-            axes[i // 2, i % 2].set_title(f"{metadata['country'][i]} {metadata['installation'][i]} {metadata['date'][i]}")
+        fig, axes = plt.subplots(3, 5, figsize=(25, 15), layout='constrained')
+        for i in range(15):
+            axes[i // 5, i % 5].plot(target[i], label="PV Output", color="black", linewidth=2)
+            axes[i // 5, i % 5].plot(pred[i], label="Forecast", color="red", linewidth=2)
+            axes[i // 5, i % 5].set_xlabel("Time")
+            axes[i // 5, i % 5].set_ylabel("Efficiency")
+            axes[i // 5, i % 5].legend(loc="upper right")
+            axes[i // 5, i % 5].set_ylim(-0.2,1)
+            axes[i // 5, i % 5].set_title(f"{metadata['country'][i]} {metadata['installation'][i]} {metadata['date'][i]}")
 
         self.logger.log_image(key=f"{stage}_outputs_plot", images=[fig])

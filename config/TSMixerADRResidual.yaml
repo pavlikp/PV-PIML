@@ -14,7 +14,7 @@ train_params:
   gpus: 1
   savefile: "PV-PIML"
   val_batches: 9999999
-  train_batches: 512
+  train_batches: 1000
   early_stopping:
     strict: false
     verbose: true
@@ -33,10 +33,10 @@ model_params:
   futr_exog_size: 8
   stat_exog_size: 0
   ghi_zero_mask: true
-  activation: "none"
+  activation: "exp"
+  residual_kind: "multiplicative"
 dataset:
   path: 'C:\Users\peter\Repos\ENFIELD-data\processed_unpack\nwp_0h'
   previous_days: 5
   countries: ["Germany"]
-  installations: [50653]
   continuous: true
