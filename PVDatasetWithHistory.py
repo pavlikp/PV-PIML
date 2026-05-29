@@ -1,5 +1,6 @@
 from importlib.metadata import metadata
 from os import listdir
+import pathlib
 
 from torch.utils.data import Dataset
 import os.path as osp
@@ -70,7 +71,7 @@ class PVDatasetWithHistory(Dataset):
         installation_metadata = installation_metadata[installation_metadata["System ID"] == self.samples.iloc[idx].installation_ID].iloc[0]
 
         date = self.samples.iloc[idx].date
-        df_present = pd.read_csv(osp.join(self.path, self.samples.iloc[idx].filepath))
+        df_present = pd.read_csv(osp.join(self.path, pathlib.PureWindowsPath(self.samples.iloc[idx].filepath).as_posix()))
         df_present["date"] = date
         df_present["datetime"] = pd.to_datetime(df_present["date"].astype(str) + " " + df_present["time"])
 
@@ -91,11 +92,12 @@ class PVDatasetWithHistory(Dataset):
         if 'solar_zenith' in self.target_variables or 'solar_azimuth' in self.target_variables:
             inputs['solar_zenith'], inputs['solar_azimuth'] = self._solar_position(df_present["datetime"], installation_metadata)
 
-        inputs[f'production'] = torch.tensor([]).float() if 'production' in self.history_variables and self.continuous and self.previous_days > 0 else None
+        if 'production' in self.history_variables and self.continuous and self.previous_days > 0:
+            inputs['production'] = torch.tensor([]).float()
         for i in range(1, self.previous_days + 1):
             meta_index = self.samples.iloc[idx:idx+1].index[0] - i
             previous_date = pd.to_datetime(date) - pd.Timedelta(days=i)
-            df_previous = pd.read_csv(osp.join(self.path, self.full_metadata.loc[meta_index].filepath))
+            df_previous = pd.read_csv(osp.join(self.path, pathlib.PureWindowsPath(self.full_metadata.loc[meta_index].filepath).as_posix()))
             df_previous["date"] = previous_date
             df_previous["datetime"] = pd.to_datetime(df_previous["date"].astype(str) + " " + df_previous["time"])
 
@@ -179,6 +181,9 @@ class PVDatasetWithHistory(Dataset):
             meta["tilt"] = torch.deg2rad(torch.tensor(0)).float()
         else:
             raise NotImplementedError(f"Orientation {installation_metadata['Orientation']} not implemented!")
+        
+        assert not torch.isnan(out).any(), f"NaN values found in output for sample {idx} (installation {meta['installation']}, date {meta['date']})"
+        assert not torch.isnan(torch.stack(list(inputs.values()))).any(), f"NaN values found in inputs for sample {idx} (installation {meta['installation']}, date {meta['date']})"
 
         return inputs, out, meta
     

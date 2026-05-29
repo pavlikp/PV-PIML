@@ -1,21 +1,20 @@
-architecture: "ADRInspired"
+architecture: "ADR"
 # Parameters for training model
 train_params:
   device: cuda:0
   train_batch_size: 16
-  valid_batch_size: 16
-  test_batch_size: 16
+  valid_batch_size: 128
+  test_batch_size: 128
   max_epochs: 9999
   # Max time used for training (days:hours:mins:secs)
   max_time: "99:00:00:00"
   # Validate after every n epochs
   val_check_interval: 1.0
-  num_workers: 16
+  num_workers: 20
   gpus: 1
   savefile: "PV-PIML"
   val_batches: 9999999
-  train_batches: 4096
-  val_batches: 1024
+  train_batches: 1000
   early_stopping:
     strict: false
     verbose: true
@@ -28,7 +27,9 @@ train_params:
       gamma : 0.95
   lr: 1e-03
   loss: "mse"
-
+  mode: "global"
+model_params:
+  num_sites: 3713
 dataset:
-  path: 'C:\Users\peter\Repos\ENFIELD-data\processed_unpack\nwp_0h'
+  path: '/projects/p1364-25-2/datasets/pv/processed/nwp_0h'
   previous_days: 0

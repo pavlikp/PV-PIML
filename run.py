@@ -38,6 +38,9 @@ def main(config, run_name, checkpoint=None, seed=1, test_only=False):
     if confdict.architecture == "ADRInspired":
         from models import ADRInspired as ADRInspired
         model = ADRInspired(confdict)
+    if confdict.architecture == "ADR":
+        from models.ADR import ADR
+        model = ADR(confdict)
     elif confdict.architecture == "PVUNet":
         from models.PVUNet import PVUNet
         model = PVUNet(confdict)
