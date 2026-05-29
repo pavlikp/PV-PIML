@@ -14,4 +14,6 @@ def normalize_inputs(x: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
             x[key] = (x[key] - torch.pi) / 2
         elif 'unix_timestamps' in key:
             del x[key]
+        elif 'pv_ref_temp_diff' in key:
+            x[key] = x[key] / 8
     return x

@@ -21,12 +21,25 @@ class PVTSMixerADRAugment(pl.LightningModule):
         self.lr_sch_params = config.train_params.lr_scheduler
         self.automatic_optimization = False
 
+        self.ghi_zero_mask = config.model_params.ghi_zero_mask
+        if config.model_params.activation == "sigmoid":
+            self.activation = torch.nn.Sigmoid()
+        elif config.model_params.activation == "gelu":
+            self.activation = torch.nn.GELU()
+        elif config.model_params.activation == "exp":
+            self.activation = torch.exp
+        elif config.model_params.activation == None or config.model_params.activation == "none":
+            self.activation = torch.nn.Identity()
+        else:
+            raise NotImplementedError(f"Activation {config.model_params.activation} not implemented!")
+
         self.ADR = ADRModule()
         self.model = TSMixerx(**config.model_params)
 
     def forward(self, x, meta):
-        adr_output = self.ADR(x, meta)
+        adr_output, miscellaneous = self.ADR(x, meta)
         x["ADR_output"] = adr_output
+        x = {**x, **miscellaneous}
 
         x_norm = normalize_inputs(x)
         insample_y = x_norm.pop("production").unsqueeze(-1)
@@ -49,7 +62,13 @@ class PVTSMixerADRAugment(pl.LightningModule):
             "stat_exog": None
         }
 
-        return self.model(batch)
+        model_output = self.activation(self.model(batch))
+
+        if self.ghi_zero_mask or not self.training:
+            mask = (x['ghi'][:, -model_output.shape[1]:] != 0).float()
+            model_output = model_output * mask.unsqueeze(2)
+
+        return model_output
     
     def training_step(self, batch, batch_idx):
         x, y, meta = batch
@@ -67,25 +86,34 @@ class PVTSMixerADRAugment(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         x, y, meta = batch
         y_hat = self(x, meta)
-        loss = self.criterion(y_hat.squeeze(), y)
+        y_hat_nonneg = y_hat.clone()
+        y_hat_nonneg[y_hat_nonneg < 0] = 0
+        loss = self.criterion(y_hat_nonneg.squeeze(), y)
         self.log("val_loss", loss)
+
+        if batch_idx == 0:
+            self.plot_outputs(y.cpu().detach().numpy(), y_hat.cpu().detach().numpy(), meta, "valid")
 
         return loss
 
     def test_step(self, batch, batch_idx):
         x, y, meta = batch
         y_hat = self(x, meta)
+        y_hat_nonneg = y_hat.clone()
+        y_hat_nonneg[y_hat_nonneg < 0] = 0
+        loss = self.criterion(y_hat_nonneg.squeeze(), y)
 
-        loss = self.criterion(y_hat.squeeze(), y)
-
-        mse = nn.functional.mse_loss(y_hat.squeeze(), y)
-        mae_w = nn.functional.l1_loss(y_hat.squeeze() * meta["system_size"].unsqueeze(1), y * meta["system_size"].unsqueeze(1))
-        mape_total = torch.abs((y.sum() - y_hat.sum()) / (y.sum() + 1e-6)) * 100
+        mse = nn.functional.mse_loss(y_hat_nonneg.squeeze(), y)
+        mae_w = nn.functional.l1_loss(y_hat_nonneg.squeeze() * meta["system_size"].unsqueeze(1), y * meta["system_size"].unsqueeze(1))
+        mape_total = torch.abs((y.sum() - y_hat_nonneg.sum()) / (y.sum() + 1e-6)) * 100
 
         self.log("test_mse", mse.detach())
         self.log("test_mae_watts", mae_w.detach())
         self.log("test_mape_total", mape_total.detach())
         self.log("test_loss", loss.detach())
+
+        if batch_idx == 0:
+            self.plot_outputs(y.cpu().detach().numpy(), y_hat_nonneg.cpu().detach().numpy(), meta, "test")
 
         return loss
     
@@ -113,3 +141,17 @@ class PVTSMixerADRAugment(pl.LightningModule):
             sch.step(self.trainer.callback_metrics["val_loss"])
         elif isinstance(sch, torch.optim.lr_scheduler.ExponentialLR):
             sch.step()
+
+    def plot_outputs(self, target, pred, metadata, stage):
+        import matplotlib.pyplot as plt
+        fig, axes = plt.subplots(3, 5, figsize=(25, 15), layout='constrained')
+        for i in range(15):
+            axes[i // 5, i % 5].plot(target[i], label="PV Output", color="black", linewidth=2)
+            axes[i // 5, i % 5].plot(pred[i], label="Forecast", color="red", linewidth=2)
+            axes[i // 5, i % 5].set_xlabel("Time")
+            axes[i // 5, i % 5].set_ylabel("Efficiency")
+            axes[i // 5, i % 5].legend(loc="upper right")
+            axes[i // 5, i % 5].set_ylim(-0.2,1)
+            axes[i // 5, i % 5].set_title(f"{metadata['country'][i]} {metadata['installation'][i]} {metadata['date'][i]}")
+
+        self.logger.log_image(key=f"{stage}_outputs_plot", images=[fig])

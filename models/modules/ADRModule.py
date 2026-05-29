@@ -64,4 +64,4 @@ class ADRModule(nn.Module):
 
         eta = self.k_a * ((1 + self.k_rs + self.k_rsh) * v - self.k_rs * s - self.k_rsh * v**2)
 
-        return eta * s
+        return eta * s, {"pv_ref_temp_diff": dt, "s": s, "v": v, "projection": projection, "poa_direct": poa_direct / 1000.0, "poa_diffuse": poa_diffuse / 1000.0}

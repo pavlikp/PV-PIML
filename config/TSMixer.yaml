@@ -10,7 +10,7 @@ train_params:
   max_time: "99:00:00:00"
   # Validate after every n epochs
   val_check_interval: 1.0
-  num_workers: 16
+  num_workers: 20
   gpus: 1
   savefile: "PV-PIML"
   val_batches: 9999999
@@ -33,9 +33,10 @@ model_params:
   futr_exog_size: 7
   stat_exog_size: 0
   ghi_zero_mask: true
-  activation: "exp"
+  activation: "gelu"
 dataset:
-  path: 'C:\Users\peter\Repos\ENFIELD-data\processed_unpack\nwp_0h'
+  path: '/projects/p1364-25-2/datasets/pv/processed/nwp_0h'
   previous_days: 5
-  countries: ["Germany"]
+  countries: ["Austria"]
+  installations: [32943]
   continuous: true
