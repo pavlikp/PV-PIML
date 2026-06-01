@@ -12,4 +12,4 @@
 
 cd ..
 srun /home/ppavlik/miniconda3/envs/pv/bin/python \
-  run.py ADR -n ADR_GlobalLR+Bounded
+  run.py ADR -n ADR_Global -c /home/ppavlik/repos/PV-PIML/checkpoints/PV-PIML/ADR_GlobalLR+Bounded/epoch=23-step=24000.ckpt -t

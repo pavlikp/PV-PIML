@@ -4,7 +4,7 @@ import torch.nn as nn
 
 class ADRModuleEmbedding(nn.Module):
     
-    def __init__(self, num_sites=3713, initialize_values={"albedo": -1.0, "u0": 25.0, "u1": 7.0, "k_a": 0.55, "k_d": 0.0, "tc_d": 0.0, "k_rs": -7.0, "k_rsh": -7.0}):
+    def __init__(self, num_sites=3713, initialize_values={"albedo": -1.0, "u0": 25.0, "u1": 7.0, "k_a": 0.55, "k_d": 0.0, "tc_d": 0.0, "k_rs": -1.0, "k_rsh": -1.0}):
         
         super().__init__()
 

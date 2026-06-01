@@ -12,4 +12,4 @@
 
 cd ..
 srun /home/ppavlik/miniconda3/envs/pv/bin/python \
-  run.py TSMixerADRResidual -n TSMixerADRResidual_AT32943
+  run.py TSMixerADRResidual -n TSMixerADRResidual_PretrainedADR -c /home/ppavlik/repos/PV-PIML/checkpoints/PV-PIML/TSMixerADRResidual_PretrainedADR/epoch=26-step=27000.ckpt -t

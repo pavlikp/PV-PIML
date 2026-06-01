@@ -37,6 +37,4 @@ model_params:
 dataset:
   path: '/projects/p1364-25-2/datasets/pv/processed/nwp_0h'
   previous_days: 5
-  countries: ["Austria"]
-  installations: [32943]
   continuous: true

@@ -100,12 +100,16 @@ class PVTSMixer(pl.LightningModule):
         loss = self.criterion(y_hat_nonneg.squeeze(), y)
 
         mse = nn.functional.mse_loss(y_hat_nonneg.squeeze(), y)
+        mse_daily = nn.functional.mse_loss(y_hat_nonneg.sum(axis=1).squeeze(), y.sum(axis=1))
         mae_w = nn.functional.l1_loss(y_hat_nonneg.squeeze() * meta["system_size"].unsqueeze(1), y * meta["system_size"].unsqueeze(1))
-        mape_total = torch.abs((y.sum() - y_hat_nonneg.sum()) / (y.sum() + 1e-6)) * 100
+        mae_daily_kwh = nn.functional.l1_loss(y_hat_nonneg.sum(axis=1).squeeze() * meta["system_size"], y.sum(axis=1) * meta["system_size"]) / 4000
+        mape_daily = (torch.abs((y.sum(axis=1) - y_hat_nonneg.sum(axis=1).squeeze()) / (y.sum(axis=1) + 1e-6)) * 100).mean()
 
         self.log("test_mse", mse.detach())
         self.log("test_mae_watts", mae_w.detach())
-        self.log("test_mape_total", mape_total.detach())
+        self.log("test_mae_daily_kwh", mae_daily_kwh.detach())
+        self.log("test_mape_daily", mape_daily.detach())
+        self.log("test_mse_daily", mse_daily.detach())
         self.log("test_loss", loss.detach())
 
         if batch_idx == 0:

@@ -35,9 +35,13 @@ model_params:
   ghi_zero_mask: true
   activation: "none"
   residual_kind: "additive"
+  ADR:
+    params:
+      num_sites: 3713
+    mode: "embedding"
+    checkpoint: "/home/ppavlik/repos/PV-PIML/checkpoints/PV-PIML/ADR_EmbeddingLR+Bounded+k_init++/epoch=94-step=95000.ckpt"
+    freeze: true
 dataset:
   path: '/projects/p1364-25-2/datasets/pv/processed/nwp_0h'
   previous_days: 5
-  countries: ["Austria"]
-  installations: [32943]
   continuous: true

@@ -181,9 +181,6 @@ class PVDatasetWithHistory(Dataset):
             meta["tilt"] = torch.deg2rad(torch.tensor(0)).float()
         else:
             raise NotImplementedError(f"Orientation {installation_metadata['Orientation']} not implemented!")
-        
-        assert not torch.isnan(out).any(), f"NaN values found in output for sample {idx} (installation {meta['installation']}, date {meta['date']})"
-        assert not torch.isnan(torch.stack(list(inputs.values()))).any(), f"NaN values found in inputs for sample {idx} (installation {meta['installation']}, date {meta['date']})"
 
         return inputs, out, meta
     

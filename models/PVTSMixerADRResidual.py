@@ -4,6 +4,7 @@ import torch.nn as nn
 
 from models.modules.TSMixerx import TSMixerx
 from models.modules.ADRModule import ADRModule
+from models.modules.ADRModuleEmbedding import ADRModuleEmbedding
 from utils.normalize import normalize_inputs
 
 class PVTSMixerADRResidual(pl.LightningModule):
@@ -33,11 +34,22 @@ class PVTSMixerADRResidual(pl.LightningModule):
             raise NotImplementedError(f"Activation {config.model_params.activation} not implemented!")
 
 
-        self.ADR = ADRModule()
+        if config.model_params.ADR.mode == "global":
+            self.ADR = ADRModule()
+        elif config.model_params.ADR.mode == "embedding":
+            self.ADR = ADRModuleEmbedding(**config.model_params.ADR.params)
+
+        if config.model_params.ADR.checkpoint is not None:
+            checkpoint = torch.load(config.model_params.ADR.checkpoint, weights_only=False)
+            self.ADR.load_state_dict(checkpoint["state_dict"], strict=False)
+            if config.model_params.ADR.freeze:
+                for param in self.ADR.parameters():
+                    param.requires_grad = False
+
         self.model = TSMixerx(**config.model_params)
 
     def forward(self, x, meta):
-        adr_output = self.ADR(x, meta)
+        adr_output, _ = self.ADR(x, meta)
         x["ADR_output"] = adr_output
 
         x_norm = normalize_inputs(x)
@@ -112,12 +124,16 @@ class PVTSMixerADRResidual(pl.LightningModule):
         loss = self.criterion(y_hat_nonneg.squeeze(), y)
 
         mse = nn.functional.mse_loss(y_hat_nonneg.squeeze(), y)
+        mse_daily = nn.functional.mse_loss(y_hat_nonneg.sum(axis=1).squeeze(), y.sum(axis=1))
         mae_w = nn.functional.l1_loss(y_hat_nonneg.squeeze() * meta["system_size"].unsqueeze(1), y * meta["system_size"].unsqueeze(1))
-        mape_total = torch.abs((y.sum() - y_hat_nonneg.sum()) / (y.sum() + 1e-6)) * 100
+        mae_daily_kwh = nn.functional.l1_loss(y_hat_nonneg.sum(axis=1).squeeze() * meta["system_size"], y.sum(axis=1) * meta["system_size"]) / 4000
+        mape_daily = (torch.abs((y.sum(axis=1) - y_hat_nonneg.sum(axis=1).squeeze()) / (y.sum(axis=1) + 1e-6)) * 100).mean()
 
         self.log("test_mse", mse.detach())
         self.log("test_mae_watts", mae_w.detach())
-        self.log("test_mape_total", mape_total.detach())
+        self.log("test_mae_daily_kwh", mae_daily_kwh.detach())
+        self.log("test_mape_daily", mape_daily.detach())
+        self.log("test_mse_daily", mse_daily.detach())
         self.log("test_loss", loss.detach())
 
         if batch_idx == 0:
