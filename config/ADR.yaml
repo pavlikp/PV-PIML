@@ -27,7 +27,7 @@ train_params:
       gamma : 0.95
   lr: 1e-03
   loss: "mse"
-  mode: "global"
+  mode: "embedding"
 model_params:
   num_sites: 3713
 dataset:

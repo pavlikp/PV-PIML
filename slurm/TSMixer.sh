@@ -12,4 +12,4 @@
 
 cd ..
 srun /home/ppavlik/miniconda3/envs/pv/bin/python \
-  run.py TSMixer -n TSMixer -c /home/ppavlik/repos/PV-PIML/checkpoints/PV-PIML/TSMixer/epoch=28-step=29000.ckpt -t
+  run.py TSMixer -n TSMixer-s40 -s 40

@@ -4,6 +4,7 @@ import torch.nn as nn
 
 from models.modules.ADRModule import ADRModule
 from models.modules.ADRModuleEmbedding import ADRModuleEmbedding
+from models.modules.ADRModuleHybrid import ADRModuleHybrid
 from utils.normalize import normalize_inputs
 
 class ADR(pl.LightningModule):
@@ -25,6 +26,8 @@ class ADR(pl.LightningModule):
             self.model = ADRModule()
         elif config.train_params.mode == "embedding":
             self.model = ADRModuleEmbedding(**config.model_params)
+        elif config.train_params.mode == "hybrid":
+            self.model = ADRModuleHybrid(**config.model_params)
 
     def forward(self, x, meta):
         return self.model(x, meta)

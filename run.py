@@ -58,7 +58,7 @@ def main(config, run_name, checkpoint=None, seed=1, test_only=False):
 
     # Callbacks
     model_ckpt = ModelCheckpoint(
-        dirpath=f"./checkpoints/{confdict.train_params.savefile}/{run_name}",
+        dirpath=f"/projects/p1364-25-2/checkpoints/{confdict.train_params.savefile}/{run_name}",
         save_top_k=1,
         monitor="val_loss",
         save_on_train_epoch_end=False,

@@ -5,6 +5,7 @@ import torch.nn as nn
 from models.modules.TSMixerx import TSMixerx
 from models.modules.ADRModule import ADRModule
 from models.modules.ADRModuleEmbedding import ADRModuleEmbedding
+from models.modules.ADRModuleHybrid import ADRModuleHybrid
 from utils.normalize import normalize_inputs
 
 class PVTSMixerADRResidual(pl.LightningModule):
@@ -38,6 +39,8 @@ class PVTSMixerADRResidual(pl.LightningModule):
             self.ADR = ADRModule()
         elif config.model_params.ADR.mode == "embedding":
             self.ADR = ADRModuleEmbedding(**config.model_params.ADR.params)
+        elif config.model_params.ADR.mode == "hybrid":
+            self.ADR = ADRModuleHybrid(**config.model_params.ADR.params)
 
         if config.model_params.ADR.checkpoint is not None:
             checkpoint = torch.load(config.model_params.ADR.checkpoint, weights_only=False)
@@ -49,8 +52,9 @@ class PVTSMixerADRResidual(pl.LightningModule):
         self.model = TSMixerx(**config.model_params)
 
     def forward(self, x, meta):
-        adr_output, _ = self.ADR(x, meta)
+        adr_output, miscellaneous = self.ADR(x, meta)
         x["ADR_output"] = adr_output
+        x = {**x, **miscellaneous}
 
         x_norm = normalize_inputs(x)
         insample_y = x_norm.pop("production").unsqueeze(-1)

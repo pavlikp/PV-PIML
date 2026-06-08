@@ -30,7 +30,7 @@ model_params:
   h: 96
   input_size: 480
   n_series: 1
-  futr_exog_size: 8
+  futr_exog_size: 14
   stat_exog_size: 0
   ghi_zero_mask: true
   activation: "none"
@@ -38,8 +38,8 @@ model_params:
   ADR:
     params:
       num_sites: 3713
-    mode: "embedding"
-    checkpoint: "/home/ppavlik/repos/PV-PIML/checkpoints/PV-PIML/ADR_EmbeddingLR+Bounded+k_init++/epoch=94-step=95000.ckpt"
+    mode: "hybrid"
+    checkpoint: "/home/ppavlik/repos/PV-PIML/checkpoints/PV-PIML/ADR_Hybrid/epoch=79-step=80000.ckpt"
     freeze: true
 dataset:
   path: '/projects/p1364-25-2/datasets/pv/processed/nwp_0h'
