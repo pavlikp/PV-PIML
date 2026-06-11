@@ -12,4 +12,4 @@
 
 cd ..
 srun /home/ppavlik/miniconda3/envs/pv/bin/python \
-  run.py TSMixerADRAugment -n TSMixerAugment-s40 -s 40
+  run.py TSMixerADRAugment -n TSMixerAugment9 -s 9

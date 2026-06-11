@@ -68,7 +68,7 @@ def main(config, run_name, checkpoint=None, seed=1, test_only=False):
     lr_monitor = LearningRateMonitor(logging_interval="epoch")
     early_stopping = EarlyStopping(**confdict.train_params.early_stopping)
     device_monitor = DeviceStatsMonitor()
-    logger = WandbLogger(save_dir=f"./wandb",
+    logger = WandbLogger(save_dir=f"/projects/p1364-25-2/wandb",
                          project=confdict.train_params.savefile, name=run_name, log_model=False, config={**confdict})
 
     trainer = pl.Trainer(

@@ -12,4 +12,4 @@
 
 cd ..
 srun /home/ppavlik/miniconda3/envs/pv/bin/python \
-  run.py TSMixerADRResidual -n TSMixerADRResidual++-s40 -s 40
+  run.py TSMixerADRResidual -n TSMixerADRResidual9 -s 9
