@@ -35,16 +35,16 @@ class PVDatasetWithHistory(Dataset):
 
         self.metadata = self.full_metadata[self.full_metadata["previous_days"] >= self.previous_days]
 
-        installation_ids = self.metadata["installation_ID"].unique()
+        installation_ids = self.full_metadata["installation_ID"].unique()
         installation_ids.sort()
         installation_idx = torch.arange(len(installation_ids))
         self.installation_id_to_idx = dict(zip(installation_ids, installation_idx))
 
         if self.countries is not None:
-            self.metadata = self.full_metadata[self.full_metadata["country"].isin(self.countries)]
+            self.metadata = self.metadata[self.metadata["country"].isin(self.countries)]
 
         if self.installations is not None:
-            self.metadata = self.full_metadata[self.full_metadata["installation_ID"].isin(self.installations)]
+            self.metadata = self.metadata[self.metadata["installation_ID"].isin(self.installations)]
         
         self.metadata = self.metadata.sort_values("date", ascending=True)
 
