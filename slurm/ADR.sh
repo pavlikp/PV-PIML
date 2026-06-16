@@ -12,4 +12,4 @@
 
 cd ..
 srun /home/ppavlik/miniconda3/envs/pv/bin/python \
-  run.py ADR -n ADR_Embedding
+  run.py ADR10 -n ADR_Hybrid_1/10

@@ -21,7 +21,10 @@ class PVDatasetWithHistory(Dataset):
                  countries=None,
                  installations=None,
                  split="train",
-                 continuous=False):
+                 continuous=False,
+                 test_fraction=5,
+                 valid_fraction=100,
+                 train_fraction=1):
         self.path = path
         self.previous_days = previous_days
         self.target_variables = target_variables
@@ -48,13 +51,15 @@ class PVDatasetWithHistory(Dataset):
         
         self.metadata = self.metadata.sort_values("date", ascending=True)
 
-        TEST_FRACTION = 5
-        VALID_FRACTION = 100
+        self.train_fraction = train_fraction
+        self.valid_fraction = valid_fraction
+        self.test_fraction = test_fraction
 
-        test_samples = self.metadata.iloc[-len(self.metadata)//TEST_FRACTION:]
-        train_samples_full = self.metadata.iloc[:-len(self.metadata)//TEST_FRACTION]
-        valid_samples = train_samples_full.iloc[::VALID_FRACTION]
+        test_samples = self.metadata.iloc[-len(self.metadata)//self.test_fraction:]
+        train_samples_full = self.metadata.iloc[:-len(self.metadata)//self.test_fraction]
+        valid_samples = train_samples_full.iloc[::self.valid_fraction]
         train_samples = train_samples_full[~train_samples_full.index.isin(valid_samples.index)]
+        train_samples = train_samples.iloc[::self.train_fraction]
 
         if self.split == "train":
             self.samples = train_samples

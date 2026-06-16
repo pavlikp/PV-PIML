@@ -5,7 +5,7 @@ train_params:
   train_batch_size: 16
   valid_batch_size: 128
   test_batch_size: 128
-  max_epochs: 1000
+  max_epochs: 100
   # Max time used for training (days:hours:mins:secs)
   max_time: "99:00:00:00"
   # Validate after every n epochs
@@ -19,7 +19,7 @@ train_params:
     strict: false
     verbose: true
     monitor: "val_loss"
-    patience: 99
+    patience: 4
   lr_scheduler:
     name: "ExponentialLR"
     kwargs:
@@ -39,9 +39,10 @@ model_params:
     params:
       num_sites: 3713
     mode: "hybrid"
-    checkpoint: "/home/ppavlik/repos/PV-PIML/checkpoints/PV-PIML/ADR_Hybrid/epoch=79-step=80000.ckpt"
+    checkpoint: "/projects/p1364-25-2/checkpoints/PV-PIML/ADR_Hybrid_DE/epoch=70-step=71000.ckpt"
     freeze: true
 dataset:
   path: '/projects/p1364-25-2/datasets/pv/processed/nwp_0h'
   previous_days: 5
   continuous: true
+  countries: ["Slovakia"]

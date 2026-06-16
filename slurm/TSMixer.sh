@@ -12,4 +12,4 @@
 
 cd ..
 srun /home/ppavlik/miniconda3/envs/pv/bin/python \
-  run.py TSMixer -n TSMixer9 -s 9
+  run.py TSMixer1000 -n TSMixer_1/1000

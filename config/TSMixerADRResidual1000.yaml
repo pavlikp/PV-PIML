@@ -1,4 +1,4 @@
-architecture: "TSMixerADRAugment"
+architecture: "TSMixerADRResidual"
 # Parameters for training model
 train_params:
   device: cuda:0
@@ -19,7 +19,7 @@ train_params:
     strict: false
     verbose: true
     monitor: "val_loss"
-    patience: 99
+    patience: 4
   lr_scheduler:
     name: "ExponentialLR"
     kwargs:
@@ -33,14 +33,16 @@ model_params:
   futr_exog_size: 14
   stat_exog_size: 0
   ghi_zero_mask: true
-  activation: "gelu"
+  activation: "none"
+  residual_kind: "additive"
   ADR:
     params:
       num_sites: 3713
     mode: "hybrid"
-    checkpoint: "/home/ppavlik/repos/PV-PIML/checkpoints/PV-PIML/ADR_Hybrid/epoch=79-step=80000.ckpt"
+    checkpoint: "/projects/p1364-25-2/checkpoints/PV-PIML/ADR_Hybrid_1/1000/epoch=8-step=1377.ckpt"
     freeze: true
 dataset:
   path: '/projects/p1364-25-2/datasets/pv/processed/nwp_0h'
   previous_days: 5
   continuous: true
+  train_fraction: 1000

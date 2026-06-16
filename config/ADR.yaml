@@ -19,16 +19,17 @@ train_params:
     strict: false
     verbose: true
     monitor: "val_loss"
-    patience: 99
+    patience: 4
   lr_scheduler:
     name: "ExponentialLR"
     kwargs:
       gamma : 0.95
   lr: 1e-03
   loss: "mse"
-  mode: "embedding"
+  mode: "hybrid"
 model_params:
   num_sites: 3713
 dataset:
   path: '/projects/p1364-25-2/datasets/pv/processed/nwp_0h'
   previous_days: 0
+  train_fraction: 10000

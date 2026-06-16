@@ -1,5 +1,5 @@
 import torch
-from torch.utils.data import Sampler
+from torch.utils.data import RandomSampler, Sampler
 import pytorch_lightning as pl
 
 from PVDatasetWithHistory import PVDatasetWithHistory
@@ -33,11 +33,12 @@ class PVDatamodule(pl.LightningDataModule):
         #     self.predict_dataset = PVDatasetWithHistory(split="test", **self.dsconfig)
 
     def train_dataloader(self):
+        sampler = RandomSampler(self.train_dataset, replacement=True, num_samples=self.train_params.train_batch_size * self.train_params.train_batches)
         return torch.utils.data.DataLoader(self.train_dataset,
                                            batch_size=self.train_params.train_batch_size,
                                            num_workers=self.train_params.num_workers,
                                            persistent_workers=True,
-                                           shuffle=True)
+                                           sampler=sampler)
 
     def val_dataloader(self):
         return torch.utils.data.DataLoader(self.valid_dataset,
