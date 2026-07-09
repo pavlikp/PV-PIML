@@ -44,7 +44,11 @@ class PVTSMixerADRAugment(pl.LightningModule):
         
         if config.model_params.ADR.checkpoint is not None:
             checkpoint = torch.load(config.model_params.ADR.checkpoint, weights_only=False)
-            self.ADR.load_state_dict(checkpoint["state_dict"], strict=False)
+            fixed_state_dict = {
+                k.replace("model.", "", 1): v 
+                for k, v in checkpoint["state_dict"].items()
+            }
+            self.ADR.load_state_dict(fixed_state_dict, strict=True)
             if config.model_params.ADR.freeze:
                 for param in self.ADR.parameters():
                     param.requires_grad = False

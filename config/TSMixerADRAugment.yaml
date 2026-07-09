@@ -38,9 +38,9 @@ model_params:
     params:
       num_sites: 3713
     mode: "hybrid"
-    checkpoint: "/home/ppavlik/repos/PV-PIML/checkpoints/PV-PIML/ADR_Hybrid/epoch=79-step=80000.ckpt"
-    freeze: true
+    checkpoint: '/project/p1364-25-2/checkpoints/PV-PIML/ADR_Hybrid_Correct/epoch=71-step=72000.ckpt'
+    freeze: false
 dataset:
-  path: '/projects/p1364-25-2/datasets/pv/processed/nwp_0h'
+  path: '/project/p1364-25-2/datasets/pv/processed/nwp_0h'
   previous_days: 5
   continuous: true
