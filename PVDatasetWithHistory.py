@@ -83,11 +83,11 @@ class PVDatasetWithHistory(Dataset):
         inputs = {}
 
         if 'dhi' in self.target_variables:
-            inputs['dhi'] = torch.tensor(df_present['aswdir_s_i'].values).float()
+            inputs['dhi'] = torch.tensor(df_present['aswdifd_s_i'].values).float()
         if 'ghi' in self.target_variables:
             inputs['ghi'] = torch.tensor(df_present['ghi'].values).float()
         if 'dni' in self.target_variables:
-            inputs['dni'] = torch.tensor(df_present['aswdifd_s_i'].values).float()
+            inputs['dni'] = torch.tensor(df_present['aswdir_s_i'].values).float()
         if 'wind_speed' in self.target_variables:
             inputs['wind_speed'] = torch.tensor(df_present['wind_speed'].values).float()
         if 'temp_air' in self.target_variables:
@@ -108,11 +108,11 @@ class PVDatasetWithHistory(Dataset):
 
             if self.continuous:
                 if 'dhi' in self.history_variables:
-                    inputs[f'dhi'] = torch.cat((torch.tensor(df_previous['aswdir_s_i'].values).float(), inputs[f'dhi']), dim=0)
+                    inputs[f'dhi'] = torch.cat((torch.tensor(df_previous['aswdifd_s_i'].values).float(), inputs[f'dhi']), dim=0)
                 if 'ghi' in self.history_variables:
                     inputs[f'ghi'] = torch.cat((torch.tensor(df_previous['ghi'].values).float(), inputs[f'ghi']), dim=0)
                 if 'dni' in self.history_variables:
-                    inputs[f'dni'] = torch.cat((torch.tensor(df_previous['aswdifd_s_i'].values).float(), inputs[f'dni']), dim=0)
+                    inputs[f'dni'] = torch.cat((torch.tensor(df_previous['aswdir_s_i'].values).float(), inputs[f'dni']), dim=0)
                 if 'wind_speed' in self.history_variables:
                     inputs[f'wind_speed'] = torch.cat((torch.tensor(df_previous['wind_speed'].values).float(), inputs[f'wind_speed']), dim=0)
                 if 'temp_air' in self.history_variables:
@@ -130,11 +130,11 @@ class PVDatasetWithHistory(Dataset):
                     inputs[f'solar_azimuth'] = torch.cat((solar_azimuth_t, inputs[f'solar_azimuth']), dim=0)
             else:
                 if 'dhi' in self.history_variables:
-                    inputs[f'dhi_t-{i}d'] = torch.tensor(df_previous['aswdir_s_i'].values).float()
+                    inputs[f'dhi_t-{i}d'] = torch.tensor(df_previous['aswdifd_s_i'].values).float()
                 if 'ghi' in self.history_variables:
                     inputs[f'ghi_t-{i}d'] = torch.tensor(df_previous['ghi'].values).float()
                 if 'dni' in self.history_variables:
-                    inputs[f'dni_t-{i}d'] = torch.tensor(df_previous['aswdifd_s_i'].values).float()
+                    inputs[f'dni_t-{i}d'] = torch.tensor(df_previous['aswdir_s_i'].values).float()
                 if 'wind_speed' in self.history_variables:
                     inputs[f'wind_speed_t-{i}d'] = torch.tensor(df_previous['wind_speed'].values).float()
                 if 'temp_air' in self.history_variables:
