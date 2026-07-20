@@ -35,7 +35,7 @@ model_params:
   ghi_zero_mask: true
   activation: "gelu"
 dataset:
-  path: '/projects/p1364-25-2/datasets/pv/processed/nwp_0h'
+  path: '/project/p1364-25-2/datasets/pv/processed/nwp_0h'
   previous_days: 5
   continuous: true
   train_fraction: 100

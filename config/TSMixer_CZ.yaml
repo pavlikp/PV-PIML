@@ -39,3 +39,4 @@ dataset:
   previous_days: 5
   continuous: true
   train_fraction: 1
+  countries: ["Czechia"]

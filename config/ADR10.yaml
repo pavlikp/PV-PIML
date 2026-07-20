@@ -30,6 +30,6 @@ train_params:
 model_params:
   num_sites: 3713
 dataset:
-  path: '/projects/p1364-25-2/datasets/pv/processed/nwp_0h'
+  path: '/project/p1364-25-2/datasets/pv/processed/nwp_0h'
   previous_days: 0
   train_fraction: 10

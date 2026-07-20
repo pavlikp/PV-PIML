@@ -1,4 +1,4 @@
-architecture: "TSMixer"
+architecture: "TSMixerADRResidual"
 # Parameters for training model
 train_params:
   device: cuda:0
@@ -30,12 +30,19 @@ model_params:
   h: 96
   input_size: 480
   n_series: 1
-  futr_exog_size: 7
+  futr_exog_size: 14
   stat_exog_size: 0
   ghi_zero_mask: true
-  activation: "gelu"
+  activation: "none"
+  residual_kind: "additive"
+  ADR:
+    params:
+      num_sites: 3713
+    mode: "hybrid"
+    checkpoint: '/project/p1364-25-2/checkpoints/PV-PIML/ADR_Czechia_final/epoch=11-step=12000.ckpt'
+    freeze: false
 dataset:
   path: '/project/p1364-25-2/datasets/pv/processed/nwp_0h'
   previous_days: 5
   continuous: true
-  train_fraction: 1
+  countries: ["Czechia"]

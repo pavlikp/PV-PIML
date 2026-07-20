@@ -1,11 +1,11 @@
-architecture: "TSMixer"
+architecture: "ADR"
 # Parameters for training model
 train_params:
   device: cuda:0
   train_batch_size: 16
   valid_batch_size: 128
   test_batch_size: 128
-  max_epochs: 100
+  max_epochs: 9999
   # Max time used for training (days:hours:mins:secs)
   max_time: "99:00:00:00"
   # Validate after every n epochs
@@ -19,23 +19,17 @@ train_params:
     strict: false
     verbose: true
     monitor: "val_loss"
-    patience: 99
+    patience: 4
   lr_scheduler:
     name: "ExponentialLR"
     kwargs:
-      gamma : 0.95
-  lr: 1e-04
+      gamma : 0.99955
+  lr: 1e-03
   loss: "mse"
+  mode: "hybrid"
 model_params:
-  h: 96
-  input_size: 480
-  n_series: 1
-  futr_exog_size: 7
-  stat_exog_size: 0
-  ghi_zero_mask: true
-  activation: "gelu"
+  num_sites: 3713
 dataset:
   path: '/project/p1364-25-2/datasets/pv/processed/nwp_0h'
-  previous_days: 5
-  continuous: true
-  train_fraction: 1
+  previous_days: 0
+  train_fraction: 10000

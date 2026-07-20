@@ -1,12 +1,14 @@
 #!/bin/bash
-#SBATCH --job-name="PV_TSMixer"
-#SBATCH --output=outputs/PV_TSMixerAugment%J.out
+#SBATCH --job-name="Augment"
+#SBATCH --output=outputs/Augment%J.out
 #SBATCH --partition=gpu
 #SBATCH --time=12:00:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
 #SBATCH --gpus-per-task=1
 #SBATCH --mem=62G
+
+#SBATCH --exclude=n142
 
 #SBATCH --account=p1364-25-2
 

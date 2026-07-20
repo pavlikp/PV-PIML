@@ -23,7 +23,7 @@ train_params:
   lr_scheduler:
     name: "ExponentialLR"
     kwargs:
-      gamma : 0.95
+      gamma : 0.99235
   lr: 1e-04
   loss: "mse"
 model_params:
@@ -35,7 +35,7 @@ model_params:
   ghi_zero_mask: true
   activation: "gelu"
 dataset:
-  path: '/projects/p1364-25-2/datasets/pv/processed/nwp_0h'
+  path: '/project/p1364-25-2/datasets/pv/processed/nwp_0h'
   previous_days: 5
   continuous: true
   train_fraction: 1000
