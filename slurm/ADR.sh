@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --job-name="PV_ADR"
-#SBATCH --output=outputs/PV_ADR%J.out
+#SBATCH --job-name="ADR"
+#SBATCH --output=outputs/ADR%J.out
 #SBATCH --partition=gpu
 #SBATCH --time=12:00:00
 #SBATCH --ntasks=1
@@ -8,8 +8,10 @@
 #SBATCH --gpus-per-task=1
 #SBATCH --mem=62G
 
+#SBATCH --exclude=n142,n143
+
 #SBATCH --account=p1364-25-2
 
 cd ..
 srun /home/ppavlik/miniconda3/envs/pv/bin/python \
-  run.py ADR10 -n ADR_Hybrid_1/10
+  run.py ADR10000 -n ADR_1/10000f

@@ -19,11 +19,11 @@ train_params:
     strict: false
     verbose: true
     monitor: "val_loss"
-    patience: 4
+    patience: 99
   lr_scheduler:
     name: "ExponentialLR"
     kwargs:
-      gamma : 0.95
+      gamma : 0.99235
   lr: 1e-04
   loss: "mse"
 model_params:
@@ -39,10 +39,10 @@ model_params:
     params:
       num_sites: 3713
     mode: "hybrid"
-    checkpoint: "/projects/p1364-25-2/checkpoints/PV-PIML/ADR_Hybrid_1/1000/epoch=8-step=1377.ckpt"
+    checkpoint: "/project/p1364-25-2/checkpoints/PV-PIML/ADR_1/1000/epoch=6-step=1071.ckpt"
     freeze: true
 dataset:
-  path: '/projects/p1364-25-2/datasets/pv/processed/nwp_0h'
+  path: '/project/p1364-25-2/datasets/pv/processed/nwp_0h'
   previous_days: 5
   continuous: true
   train_fraction: 1000
